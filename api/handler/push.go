@@ -15,6 +15,7 @@ import (
 	"strconv"
 )
 
+// 单聊消息推送
 type FormPush struct {
 	Msg       string `form:"msg" json:"msg" binding:"required"`
 	ToUserId  string `form:"toUserId" json:"toUserId" binding:"required"`
@@ -22,7 +23,9 @@ type FormPush struct {
 	AuthToken string `form:"authToken" json:"authToken" binding:"required"`
 }
 
+// 单聊消息推送
 func Push(c *gin.Context) {
+	// 绑定并验证请求参数
 	var formPush FormPush
 	if err := c.ShouldBindBodyWith(&formPush, binding.JSON); err != nil {
 		tools.FailWithMsg(c, err.Error())
@@ -31,6 +34,8 @@ func Push(c *gin.Context) {
 	authToken := formPush.AuthToken
 	msg := formPush.Msg
 	toUserId := formPush.ToUserId
+
+	// 获取接收者信息
 	toUserIdInt, _ := strconv.Atoi(toUserId)
 	getUserNameReq := &proto.GetUserInfoRequest{UserId: toUserIdInt}
 	code, toUserName := rpc.RpcLogicObj.GetUserNameByUserId(getUserNameReq)
@@ -38,6 +43,8 @@ func Push(c *gin.Context) {
 		tools.FailWithMsg(c, "rpc fail get friend userName")
 		return
 	}
+
+	// 验证发送者身份
 	checkAuthReq := &proto.CheckAuthRequest{AuthToken: authToken}
 	code, fromUserId, fromUserName := rpc.RpcLogicObj.CheckAuth(checkAuthReq)
 	if code == tools.CodeFail {
@@ -45,6 +52,8 @@ func Push(c *gin.Context) {
 		return
 	}
 	roomId := formPush.RoomId
+
+	// 构造推送请求
 	req := &proto.Send{
 		Msg:          msg,
 		FromUserId:   fromUserId,
@@ -63,6 +72,7 @@ func Push(c *gin.Context) {
 	return
 }
 
+// 群聊消息
 type FormRoom struct {
 	AuthToken string `form:"authToken" json:"authToken" binding:"required"`
 	Msg       string `form:"msg" json:"msg" binding:"required"`
@@ -100,6 +110,7 @@ func PushRoom(c *gin.Context) {
 	return
 }
 
+// 房间人数统计：
 type FormCount struct {
 	RoomId int `form:"roomId" json:"roomId" binding:"required"`
 }
@@ -128,6 +139,7 @@ type FormRoomInfo struct {
 	RoomId int `form:"roomId" json:"roomId" binding:"required"`
 }
 
+// 获取房间信息
 func GetRoomInfo(c *gin.Context) {
 	var formRoomInfo FormRoomInfo
 	if err := c.ShouldBindBodyWith(&formRoomInfo, binding.JSON); err != nil {
