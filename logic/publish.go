@@ -24,6 +24,7 @@ import (
 var RedisClient *redis.Client
 var RedisSessClient *redis.Client
 
+// logic 层作为客户端 把消息push到消息队列（只不过此时的消息队列使用redis做的）
 func (logic *Logic) InitPublishRedisClient() (err error) {
 	redisOpt := tools.RedisOption{
 		Address:  config.Conf.Common.CommonRedis.RedisAddress,
@@ -35,13 +36,16 @@ func (logic *Logic) InitPublishRedisClient() (err error) {
 		logrus.Infof("RedisCli Ping Result pong: %s,  err: %s", pong, err)
 	}
 	//this can change use another redis save session data
+	// 这里可以用其他的redis客户端作为会话存储，也就是说我们不用把redis踢出我们的架构中了，消息队列用kafka，会话存储用redis
 	RedisSessClient = RedisClient
 	return err
 }
 
+// logic 层作为Server去处理API层的rpc call
 func (logic *Logic) InitRpcServer() (err error) {
 	var network, addr string
 	// a host multi port case
+	// 这是服务发现吗？
 	rpcAddressList := strings.Split(config.Conf.Logic.LogicBase.RpcAddress, ",")
 	for _, bind := range rpcAddressList {
 		if network, addr, err = tools.ParseNetwork(bind); err != nil {
@@ -55,6 +59,8 @@ func (logic *Logic) InitRpcServer() (err error) {
 
 func (logic *Logic) createRpcServer(network string, addr string) {
 	s := server.NewServer()
+
+	// 添加etcd？
 	logic.addRegistryPlugin(s, network, addr)
 	// serverId must be unique
 	//err := s.RegisterName(config.Conf.Common.CommonEtcd.ServerPathLogic, new(RpcLogic), fmt.Sprintf("%s", config.Conf.Logic.LogicBase.ServerId))
@@ -62,6 +68,8 @@ func (logic *Logic) createRpcServer(network string, addr string) {
 	if err != nil {
 		logrus.Errorf("register error:%s", err.Error())
 	}
+
+	// 服务注销流程
 	s.RegisterOnShutdown(func(s *server.Server) {
 		s.UnregisterAll()
 	})
@@ -70,11 +78,11 @@ func (logic *Logic) createRpcServer(network string, addr string) {
 
 func (logic *Logic) addRegistryPlugin(s *server.Server, network string, addr string) {
 	r := &serverplugin.EtcdV3RegisterPlugin{
-		ServiceAddress: network + "@" + addr,
-		EtcdServers:    []string{config.Conf.Common.CommonEtcd.Host},
-		BasePath:       config.Conf.Common.CommonEtcd.BasePath,
-		Metrics:        metrics.NewRegistry(),
-		UpdateInterval: time.Minute,
+		ServiceAddress: network + "@" + addr,                         // 地址格式 tcp@192.168.1.100:6000
+		EtcdServers:    []string{config.Conf.Common.CommonEtcd.Host}, // etcd集群地址
+		BasePath:       config.Conf.Common.CommonEtcd.BasePath,       // 服务注册根路径
+		Metrics:        metrics.NewRegistry(),                        // 监控指标
+		UpdateInterval: time.Minute,                                  //心跳间隔
 	}
 	err := r.Start()
 	if err != nil {
