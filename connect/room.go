@@ -15,11 +15,11 @@ import (
 const NoRoom = -1
 
 type Room struct {
-	Id          int
-	OnlineCount int // room online user count
+	Id          int // 房间ID
+	OnlineCount int // 房间在线人数，但是怎么判断是否在线？
 	rLock       sync.RWMutex
-	drop        bool // make room is live
-	next        *Channel
+	drop        bool     // 房间是否存活的标记
+	next        *Channel // 首个Channel指针，原来这东西是dummy头节点
 }
 
 func NewRoom(roomId int) *Room {
@@ -31,6 +31,7 @@ func NewRoom(roomId int) *Room {
 	return room
 }
 
+// 加入链表管理，无尾部节点，只能从头部开始找
 func (r *Room) Put(ch *Channel) (err error) {
 	//doubly linked list
 	r.rLock.Lock()
@@ -49,6 +50,8 @@ func (r *Room) Put(ch *Channel) (err error) {
 	return
 }
 
+// 消息推送，Connect层已经是离客户端最近的了，所以这里就直接传输过去了，从头节点往后找一个一个push
+// TODO：也许我们可以优化一下让他推的更快，这里是O(N)
 func (r *Room) Push(msg *proto.Msg) {
 	r.rLock.RLock()
 	for ch := r.next; ch != nil; ch = ch.Next {
@@ -60,6 +63,7 @@ func (r *Room) Push(msg *proto.Msg) {
 	return
 }
 
+// 删除链表上的一个节点
 func (r *Room) DeleteChannel(ch *Channel) bool {
 	r.rLock.RLock()
 	if ch.Next != nil {

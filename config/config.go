@@ -34,6 +34,7 @@ const (
 	OpBuildTcpConn        = 6 // build tcp conn
 )
 
+// 各个层的配置
 type Config struct {
 	Common  Common
 	Connect ConnectConfig

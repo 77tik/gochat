@@ -14,6 +14,7 @@ import (
 
 var dbIns = db.GetDb("gochat")
 
+// User 表
 type User struct {
 	Id         int `gorm:"primary_key"`
 	UserName   string

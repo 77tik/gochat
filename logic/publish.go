@@ -91,18 +91,21 @@ func (logic *Logic) addRegistryPlugin(s *server.Server, network string, addr str
 	s.Plugins.Add(r)
 }
 
+// 单聊消息发布
 func (logic *Logic) RedisPublishChannel(serverId string, toUserId int, msg []byte) (err error) {
 	redisMsg := proto.RedisMsg{
-		Op:       config.OpSingleSend,
-		ServerId: serverId,
-		UserId:   toUserId,
-		Msg:      msg,
+		Op:       config.OpSingleSend, // 操作的类型
+		ServerId: serverId,            // 目标服务器ID
+		UserId:   toUserId,            // 接收消息的用户ID
+		Msg:      msg,                 // 消息内容
 	}
 	redisMsgStr, err := json.Marshal(redisMsg)
 	if err != nil {
 		logrus.Errorf("logic,RedisPublishChannel Marshal err:%s", err.Error())
 		return err
 	}
+
+	// Push到消息队列中
 	redisChannel := config.QueueName
 	if err := RedisClient.LPush(redisChannel, redisMsgStr).Err(); err != nil {
 		logrus.Errorf("logic,lpush err:%s", err.Error())
@@ -111,6 +114,7 @@ func (logic *Logic) RedisPublishChannel(serverId string, toUserId int, msg []byt
 	return
 }
 
+// 群聊消息发布
 func (logic *Logic) RedisPublishRoomInfo(roomId int, count int, RoomUserInfo map[string]string, msg []byte) (err error) {
 	var redisMsg = &proto.RedisMsg{
 		Op:           config.OpRoomSend,
@@ -132,6 +136,7 @@ func (logic *Logic) RedisPublishRoomInfo(roomId int, count int, RoomUserInfo map
 	return
 }
 
+// 查询房间成员数
 func (logic *Logic) RedisPushRoomCount(roomId int, count int) (err error) {
 	var redisMsg = &proto.RedisMsg{
 		Op:     config.OpRoomCountSend,
@@ -151,6 +156,7 @@ func (logic *Logic) RedisPushRoomCount(roomId int, count int) (err error) {
 	return
 }
 
+// 查询房间元信息
 func (logic *Logic) RedisPushRoomInfo(roomId int, count int, roomUserInfo map[string]string) (err error) {
 	var redisMsg = &proto.RedisMsg{
 		Op:           config.OpRoomInfoSend,
@@ -171,6 +177,7 @@ func (logic *Logic) RedisPushRoomInfo(roomId int, count int, roomUserInfo map[st
 	return
 }
 
+// 键命名规范
 func (logic *Logic) getRoomUserKey(authKey string) string {
 	var returnKey bytes.Buffer
 	returnKey.WriteString(config.RedisRoomPrefix)
