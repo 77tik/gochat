@@ -1,0 +1,29 @@
+services:
+  etcd:
+    image: bitnami/etcd:3.4.3
+    container_name: gochat-etcd
+    ports:
+      - 2379:2379
+    environment:
+      # 时区设置
+      - TZ=Asia/Shanghai
+      # 允许无认证访问
+      - ALLOW_NONE_AUTHENTICATION=yes
+      # etcd 客户端访问URL
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    volumes:
+      # 将数据映射到宿主机
+      - etcd-data:/bitnami/etcd
+
+  redis:
+    image: redis:5.0.9-alpine
+    container_name: gochat-redis
+    command: redis-server --requirepass ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  etcd-data:
+  redis-data:

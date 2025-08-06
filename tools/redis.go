@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// 这个map只在内部使用，那么它不是全局的？
 var RedisClientMap = map[string]*redis.Client{}
 var syncLock sync.Mutex
 
@@ -21,6 +22,7 @@ type RedisOption struct {
 	Db       int
 }
 
+// 初始化一个redis客户端，然后给他加到map里面，加map里面的操作是用锁的，所以是并发安全的
 func GetRedisInstance(redisOpt RedisOption) *redis.Client {
 	address := redisOpt.Address
 	db := redisOpt.Db

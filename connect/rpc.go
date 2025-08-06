@@ -59,8 +59,8 @@ func (c *Connect) InitLogicRpcClient() (err error) {
 		// 创建RPC客户端
 		logicRpcClient = client.NewXClient(
 			config.Conf.Common.CommonEtcd.ServerPathLogic, // 服务发现路径
-			client.Failtry,                                // 失败重试策略
-			client.RandomSelect,                           // 随机负载均衡
+			client.Failtry,      // 失败重试策略
+			client.RandomSelect, // 随机负载均衡
 			d,
 			client.DefaultOption,
 		)

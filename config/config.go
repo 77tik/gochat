@@ -36,18 +36,19 @@ const (
 
 // 各个层的配置
 type Config struct {
-	Common  Common
-	Connect ConnectConfig
-	Logic   LogicConfig
-	Task    TaskConfig
-	Api     ApiConfig
-	Site    SiteConfig
+	Common  Common        // etcd and redis 配置 TODO：Mysql加进去
+	Connect ConnectConfig // 连接层配置
+	Logic   LogicConfig   // 逻辑层配置
+	Task    TaskConfig    // Task处理与队列层配置
+	Api     ApiConfig     // API层配置
+	Site    SiteConfig    // Site层配置
 }
 
 func init() {
 	Init()
 }
 
+// 通过栈帧获取当前目录名
 func getCurrentDir() string {
 	_, fileName, _, _ := runtime.Caller(1)
 	aPath := strings.Split(fileName, "/")
@@ -56,43 +57,67 @@ func getCurrentDir() string {
 }
 
 func Init() {
+	// 单例模式只做一次
 	once.Do(func() {
 		env := GetMode()
 		//realPath, _ := filepath.Abs("./")
+		// 获取当前文件目录，当前文件在config目录下，所以会获取到config目录
 		realPath := getCurrentDir()
+		// 如果env获取到的是dev(不设置的话默认是"dev")
+		// 那么这里会得到：config/dev/
 		configFilePath := realPath + "/" + env + "/"
+
+		// 指定配置文件的格式为TOML
 		viper.SetConfigType("toml")
+
+		// 指定文件名(不含拓展名)
 		viper.SetConfigName("/connect")
+
+		// 添加配置文件搜索路径
 		viper.AddConfigPath(configFilePath)
+
+		// 读取并解析配置文件
 		err := viper.ReadInConfig()
 		if err != nil {
 			panic(err)
 		}
+
+		// 将新配置文件合并到现有配置 合并common
 		viper.SetConfigName("/common")
 		err = viper.MergeInConfig()
 		if err != nil {
 			panic(err)
 		}
+
+		// 合并task
 		viper.SetConfigName("/task")
 		err = viper.MergeInConfig()
 		if err != nil {
 			panic(err)
 		}
+
+		// 合并logic
 		viper.SetConfigName("/logic")
 		err = viper.MergeInConfig()
 		if err != nil {
 			panic(err)
 		}
+
+		// 合并api
 		viper.SetConfigName("/api")
 		err = viper.MergeInConfig()
 		if err != nil {
 			panic(err)
 		}
+
+		// 合并site
 		viper.SetConfigName("/site")
 		err = viper.MergeInConfig()
 		if err != nil {
 			panic(err)
 		}
+
+		// 反序
 		Conf = new(Config)
 		viper.Unmarshal(&Conf.Common)
 		viper.Unmarshal(&Conf.Connect)
@@ -103,6 +128,7 @@ func Init() {
 	})
 }
 
+// 获取环境参数 RUN_MODE
 func GetMode() string {
 	env := os.Getenv("RUN_MODE")
 	if env == "" {
@@ -111,6 +137,7 @@ func GetMode() string {
 	return env
 }
 
+// 获取GIN运行Mode
 func GetGinRunMode() string {
 	env := GetMode()
 	//gin have debug,test,release mode
