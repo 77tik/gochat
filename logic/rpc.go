@@ -169,6 +169,7 @@ func (rpc *RpcLogic) Logout(ctx context.Context, args *proto.LogoutRequest, repl
 	}
 
 	// 先验证会话，如果不存在那就结束了，皆大欢喜，存在的话就要一个一个删了
+	// 并非是验证
 	intUserId, _ := strconv.Atoi(userDataMap["userId"])
 	sessIdMap := tools.GetSessionIdByUserId(intUserId)
 	//del sess_map like sess_map_1
